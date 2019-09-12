@@ -24,6 +24,7 @@ class HomeScreenState extends State<HomeScreen> {
   SharedPreferences prefs;
   List<String> _goalsList = [];
   List<String> _completedList = [];
+  GlobalKey<ScaffoldState> _key = GlobalKey();
 
   @override
   initState() {
@@ -44,7 +45,6 @@ class HomeScreenState extends State<HomeScreen> {
     final bool _status = _completedList.contains(text);
     return Card(
       color: _status ? Colors.greenAccent : Colors.redAccent,
-      //margin: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
       child: InkWell(
         splashColor: Theme.of(context).splashColor,
         splashFactory: Theme.of(context).splashFactory,
@@ -52,18 +52,20 @@ class HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(16.0),
           child: new Row(
             children: <Widget>[
-              _status
-                  ? new Text(
-                      text,
-                      style: TextStyle(
-                        decoration: TextDecoration.lineThrough,
-                        fontSize: 20.0,
+              Expanded(
+                child: _status
+                    ? new Text(
+                        text,
+                        style: TextStyle(
+                          decoration: TextDecoration.lineThrough,
+                          fontSize: 20.0,
+                        ),
+                      )
+                    : new Text(
+                        text,
+                        style: TextStyle(fontSize: 20.0, color: Colors.white),
                       ),
-                    )
-                  : new Text(
-                      text,
-                      style: TextStyle(fontSize: 20.0, color: Colors.white),
-                    ),
+              ),
             ],
           ),
         ),
@@ -134,6 +136,7 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _key,
       appBar: AppBar(
         title: Text("Goals"),
       ),
@@ -161,8 +164,20 @@ class HomeScreenState extends State<HomeScreen> {
                   ),
                   onDismissed: (direction) {
                     setState(() {
-                      _goalsList.removeAt(index);
+                      String _deletedItem = _goalsList.removeAt(index);
                       prefs.setStringList("goals", _goalsList);
+                      _key.currentState
+                        ..removeCurrentSnackBar()
+                        ..showSnackBar(SnackBar(
+                          content: Text("Deleted \"$_deletedItem\""),
+                          action: SnackBarAction(
+                            label: "UNDO",
+                            onPressed: () => setState(() {
+                              _goalsList.insert(index, _deletedItem);
+                              prefs.setStringList("goals", _goalsList);
+                            }),
+                          ),
+                        ));
                     });
                   },
                   child: _goal(_goalsList[index]),
